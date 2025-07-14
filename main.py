@@ -5,7 +5,6 @@ import logging
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydub import AudioSegment
 
 from faster_whisper_utils import transcribe_audio
 from mood_utils import extract_mood
@@ -24,7 +23,7 @@ app = FastAPI()
 # === CORS for frontend ===
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Use ["http://localhost:5173"] in production
+    allow_origins=["*"],  # Change this to your frontend domain in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -37,7 +36,7 @@ app.mount("/generated_tracks", StaticFiles(directory="generated_tracks"), name="
 @app.post("/upload-voice/")
 async def upload_voice(file: UploadFile = File(...), style: str = Form(...)):
     try:
-        # Generate unique ID and save uploaded file
+        # Save uploaded file
         file_id = str(uuid.uuid4())
         temp_path = f"uploads/{file_id}.wav"
 
@@ -49,15 +48,8 @@ async def upload_voice(file: UploadFile = File(...), style: str = Form(...)):
         transcript = transcribe_audio(temp_path)
         logger.info(f"[INFO] Transcription: {transcript}")
 
-        # Re-encode to clean WAV
-        clean_path = f"uploads/{file_id}_clean.wav"
-        try:
-            audio = AudioSegment.from_file(temp_path)
-            audio.export(clean_path, format="wav")
-            logger.info(f"[INFO] Re-encoded file to: {clean_path}")
-        except Exception as e:
-            logger.warning(f"[WARN] Could not re-encode audio: {e}")
-            clean_path = temp_path
+        # Use raw .wav directly — skip re-encoding
+        clean_path = temp_path
 
         # Extract mood
         mood = extract_mood(transcript)
@@ -72,15 +64,14 @@ async def upload_voice(file: UploadFile = File(...), style: str = Form(...)):
             logger.error("[ERROR] Music generation failed", exc_info=True)
             return {"error": "Music generation failed"}
 
-        # Get Spotify recommendations
+        # Spotify Recommendations
         try:
             recommendations = search_tracks_for_mood(mood)
-            logger.info(f"[INFO] Found {len(recommendations)} Spotify tracks")
+            logger.info(f"[INFO] Found {len(recommendations)} tracks")
         except Exception as e:
             logger.warning("[WARN] Failed to fetch recommendations", exc_info=True)
             recommendations = []
 
-        # Return JSON response
         return {
             "transcript": transcript,
             "mood": mood,
@@ -91,4 +82,3 @@ async def upload_voice(file: UploadFile = File(...), style: str = Form(...)):
     except Exception as e:
         logger.error("[ERROR] Failed to process voice input", exc_info=True)
         return {"error": "Failed to process voice input"}
-# trigger redeploy 
