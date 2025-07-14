@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: lorven-backend
+    env: python
+    buildCommand: pip install --no-build-isolation -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 10000
+    envVars:
+      - key: PORT
+        value: 10000
