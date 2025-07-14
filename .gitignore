@@ -1,0 +1,6 @@
+__pycache__/
+uploads/
+generated_tracks/
+*.wav
+*.mp3
+.env

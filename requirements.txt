@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pydantic
+python-multipart
+whisper
+librosa
+scikit-learn
+python-jose
+
